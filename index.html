@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Concrete Embodied Carbon Calculator | Temporary Works Prototype</title>
+  <style>
+:root {
+  --green-900: #0f3d2e;
+  --green-800: #15543f;
+  --green-700: #1e6b4f;
+  --green-600: #25835f;
+  --green-100: #e8f5ef;
+  --green-050: #f5fbf8;
+  --lime: #b7d267;
+  --cream: #f7f3e8;
+  --sand: #efe6d2;
+  --ink: #1d2a25;
+  --muted: #66736c;
+  --border: #d9e5df;
+  --white: #ffffff;
+  --shadow: 0 16px 40px rgba(16, 61, 46, 0.11);
+  --radius: 18px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  color: var(--ink);
+  background: linear-gradient(180deg, #fbfff9 0%, #f3f7f2 55%, #fff 100%);
+  line-height: 1.55;
+}
+
+body.printing .site-header,
+body.printing .site-footer,
+body.printing .button,
+body.printing .menu-button { display: none !important; }
+
+a { color: inherit; }
+button, input, select { font: inherit; }
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 4px 18px rgba(11, 45, 34, 0.12);
+}
+.top-strip {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 6vw;
+  background: var(--green-900);
+  color: #dcefe7;
+  font-size: 0.85rem;
+}
+.nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 6vw;
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(12px);
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--green-900);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  color: var(--white);
+  background: linear-gradient(135deg, var(--green-700), var(--lime));
+  box-shadow: 0 8px 20px rgba(37, 131, 95, 0.25);
+}
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  font-weight: 600;
+  color: var(--green-800);
+}
+.nav-links a { text-decoration: none; }
+.nav-links a:hover { color: var(--green-600); }
+.menu-button { display: none; }
+
+.section-pad { padding: 4.5rem 6vw; }
+.section-pad.compact { padding-top: 2rem; padding-bottom: 2rem; }
+.hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.7fr);
+  gap: 2rem;
+  min-height: 520px;
+  align-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 88% 18%, rgba(183, 210, 103, 0.28), transparent 28%),
+    linear-gradient(135deg, rgba(22, 84, 63, 0.96), rgba(15, 61, 46, 0.91)),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.09'%3E%3Cpath d='M0 90h180M90 0v180M30 0v180M60 0v180M120 0v180M150 0v180M0 30h180M0 60h180M0 120h180M0 150h180'/%3E%3C/g%3E%3C/svg%3E");
+  color: var(--white);
+}
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: auto -12% -40% 45%;
+  height: 380px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+}
+.hero-copy, .hero-card { position: relative; z-index: 1; }
+.eyebrow {
+  margin: 0 0 0.8rem;
+  color: var(--green-600);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+.hero .eyebrow { color: #cce7ad; }
+h1, h2, h3, h4 { margin: 0; line-height: 1.15; }
+h1 { max-width: 900px; font-size: clamp(2.2rem, 5vw, 4.5rem); }
+h2 { font-size: clamp(1.75rem, 3vw, 2.55rem); color: var(--green-900); }
+h3 { color: var(--green-900); font-size: 1.25rem; }
+h4 { color: var(--green-800); font-size: 1rem; margin-bottom: 0.5rem; }
+.lead { max-width: 780px; margin: 1.35rem 0 0; font-size: clamp(1.05rem, 2vw, 1.35rem); color: #ecf7f2; }
+.hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 2rem; }
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.7rem 1.15rem;
+  border: 0;
+  border-radius: 999px;
+  text-decoration: none;
+  cursor: pointer;
+  font-weight: 700;
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+.button:hover { transform: translateY(-1px); }
+.button.primary { background: var(--lime); color: #183125; box-shadow: 0 10px 24px rgba(183, 210, 103, 0.25); }
+.button.secondary { background: var(--green-100); color: var(--green-900); }
+.button.ghost { background: transparent; color: var(--green-800); border: 1px solid var(--border); }
+.hero-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1.2rem;
+  border: 1px solid rgba(255,255,255,0.24);
+  border-radius: 24px;
+  background: rgba(255,255,255,0.12);
+  box-shadow: 0 24px 55px rgba(0,0,0,0.18);
+  backdrop-filter: blur(12px);
+}
+.hero-card div {
+  padding: 1rem;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.13);
+}
+.hero-card strong { display: block; font-size: 2rem; }
+.hero-card small { display: block; color: #e3f2eb; }
+.metric-label { display: block; margin-bottom: 0.25rem; color: #cce7ad; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.section-title { max-width: 850px; margin-bottom: 1.5rem; }
+.section-title p:not(.eyebrow) { color: var(--muted); margin: 0.7rem 0 0; }
+.content-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--white);
+  box-shadow: var(--shadow);
+  padding: 1.35rem;
+}
+.wide-card { grid-column: 1 / -1; }
+.notice-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+.notice {
+  padding: 1rem;
+  border-radius: 16px;
+  background: var(--green-050);
+  border: 1px solid var(--border);
+  color: #35473f;
+}
+.calculator-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(320px, 1.2fr);
+  gap: 1.5rem;
+}
+.form-card label, .controls-card label { display: block; margin: 1rem 0 0.35rem; font-weight: 700; color: var(--green-900); }
+input, select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--white);
+  color: var(--ink);
+}
+input:focus, select:focus {
+  outline: 3px solid rgba(37, 131, 95, 0.18);
+  border-color: var(--green-600);
+}
+.field-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.8rem; }
+.calculated-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 1.2rem 0;
+  padding: 1rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--green-100), #fff);
+  border: 1px solid var(--border);
+}
+.calculated-box span { color: var(--muted); }
+.calculated-box strong { color: var(--green-900); font-size: 1.25rem; }
+.button-row { display: flex; flex-wrap: wrap; gap: 0.7rem; }
+.selected-card { background: linear-gradient(180deg, #ffffff 0%, var(--green-050) 100%); }
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.summary-grid div, .best-grid div {
+  padding: 1rem;
+  border-radius: 15px;
+  background: var(--white);
+  border: 1px solid var(--border);
+}
+.summary-grid span, .best-grid span { display: block; color: var(--muted); font-size: 0.84rem; }
+.summary-grid strong, .best-grid strong { display: block; margin-top: 0.25rem; color: var(--green-900); font-size: 1.08rem; }
+.table-card { overflow: hidden; }
+.table-toolbar, .chart-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.table-toolbar span, .chart-head span, .microcopy { color: var(--muted); font-size: 0.9rem; }
+.table-wrap { width: 100%; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 720px; }
+th, td { padding: 0.85rem 0.8rem; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
+th { background: var(--green-050); color: var(--green-900); font-size: 0.86rem; }
+tbody tr:hover { background: #fbfdf9; }
+tfoot td { font-weight: 800; background: var(--cream); }
+#comparisonTable tbody tr { cursor: pointer; }
+#comparisonTable tbody tr.selected-row { outline: 2px solid var(--green-600); background: var(--green-050); }
+
+.dashboard-section { background: linear-gradient(180deg, #f9fcf9, #edf5ef); }
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+.chart-card { min-height: 350px; }
+.donut-row { display: grid; grid-template-columns: 240px 1fr; gap: 1.25rem; align-items: center; }
+.donut {
+  width: 230px;
+  height: 230px;
+  border-radius: 50%;
+  background: conic-gradient(var(--green-600) 0deg, var(--green-600) 360deg);
+  position: relative;
+  box-shadow: inset 0 0 0 1px var(--border), 0 18px 36px rgba(16, 61, 46, 0.12);
+}
+.donut::after {
+  content: attr(data-label);
+  position: absolute;
+  inset: 50px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  white-space: pre-line;
+  background: var(--white);
+  color: var(--green-900);
+  font-weight: 800;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.legend { display: grid; gap: 0.7rem; }
+.legend-item { display: grid; grid-template-columns: 14px 1fr auto; gap: 0.6rem; align-items: center; color: var(--muted); }
+.legend-swatch { width: 14px; height: 14px; border-radius: 3px; }
+.legend-item strong { color: var(--green-900); }
+.bar-chart { display: grid; gap: 0.9rem; }
+.bar-row { display: grid; grid-template-columns: minmax(110px, 180px) 1fr minmax(70px, auto); gap: 0.7rem; align-items: center; }
+.bar-label { font-weight: 700; color: var(--green-900); }
+.bar-track { height: 18px; border-radius: 999px; overflow: hidden; background: #e7eee9; }
+.bar-fill { height: 100%; width: 0%; border-radius: inherit; background: linear-gradient(90deg, var(--green-700), var(--lime)); transition: width 250ms ease; }
+.bar-value { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.dual-chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.bar-chart.small .bar-row { grid-template-columns: 70px 1fr 72px; }
+.highlight-card { background: linear-gradient(135deg, var(--green-900), var(--green-700)); color: var(--white); }
+.highlight-card h3 { color: var(--white); }
+.best-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 0.9rem; margin-top: 1rem; }
+.best-grid div { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); }
+.best-grid span { color: #d9efe5; }
+.best-grid strong { color: #fff; }
+.controls-card { margin-bottom: 1.5rem; }
+.filter-grid { display: grid; grid-template-columns: 1.4fr 1fr auto; gap: 1rem; align-items: end; }
+.export-buttons { display: flex; justify-content: flex-end; align-items: end; }
+.two-col-data { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem; }
+#factorsTable input { min-width: 90px; min-height: 36px; padding: 0.45rem 0.55rem; }
+.guidance-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; }
+ol { padding-left: 1.25rem; }
+.site-footer {
+  padding: 2rem 6vw;
+  background: var(--green-900);
+  color: #dcefe7;
+  text-align: center;
+}
+
+@media (max-width: 980px) {
+  .hero, .calculator-layout, .dashboard-grid, .two-col-data, .guidance-grid { grid-template-columns: 1fr; }
+  .notice-grid, .summary-grid { grid-template-columns: 1fr; }
+  .filter-grid { grid-template-columns: 1fr; }
+  .export-buttons { justify-content: flex-start; }
+  .donut-row { grid-template-columns: 1fr; justify-items: center; }
+  .dual-chart-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 760px) {
+  .top-strip { display: none; }
+  .nav-bar { padding: 0.85rem 4vw; }
+  .menu-button {
+    display: inline-flex;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--white);
+    color: var(--green-900);
+    font-weight: 700;
+  }
+  .nav-links {
+    position: absolute;
+    inset: 70px 4vw auto 4vw;
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+  }
+  .nav-links.open { display: flex; }
+  .section-pad { padding: 3rem 4vw; }
+  .hero { min-height: auto; }
+  .field-grid { grid-template-columns: 1fr; }
+  .table-toolbar, .chart-head { display: block; }
+  .hero-card strong { font-size: 1.6rem; }
+}
+
+@media print {
+  body { background: #fff; }
+  .site-header, .site-footer, .button, .controls-card, .nav-links, .menu-button { display: none !important; }
+  .section-pad { padding: 1rem 0; }
+  .content-card { box-shadow: none; break-inside: avoid; }
+  .hero { color: var(--ink); background: #fff; min-height: auto; }
+  .hero .eyebrow, .lead { color: var(--ink); }
+}
+
+</style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="top-strip">
+      <span>Academic prototype</span>
+      <span>A1–A3 embodied carbon calculator for temporary works concrete</span>
+    </div>
+    <nav class="nav-bar" aria-label="Main navigation">
+      <a href="#top" class="brand" aria-label="Concrete carbon calculator home">
+        <span class="brand-mark">EC</span>
+        <span>EcoConcrete Tool</span>
+      </a>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="navLinks">Menu</button>
+      <div class="nav-links" id="navLinks">
+        <a href="#calculator">Calculator</a>
+        <a href="#results">Results</a>
+        <a href="#dashboard">Dashboard</a>
+        <a href="#data">Data</a>
+        <a href="#guidance">Guidance</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero section-pad">
+      <div class="hero-copy">
+        <p class="eyebrow">Concrete embodied carbon footprint calculator</p>
+        <h1>Designing a web-based tool for low-carbon temporary works concrete mixes</h1>
+        <p class="lead">This prototype uses the uploaded Excel calculator data to estimate material quantities, A1–A3 embodied carbon, indicative cost, and cube-test strength for three 100 mm cubes.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#calculator">Start calculator</a>
+          <a class="button secondary" href="#dashboard">View dashboard</a>
+        </div>
+      </div>
+      <aside class="hero-card" aria-label="Summary figures">
+        <div>
+          <span class="metric-label">Default boundary</span>
+          <strong>A1–A3</strong>
+          <small>Raw material supply, transport to manufacturing and manufacturing</small>
+        </div>
+        <div>
+          <span class="metric-label">Default output</span>
+          <strong>3 cubes</strong>
+          <small>100 × 100 × 100 mm with adjustable wastage</small>
+        </div>
+        <div>
+          <span class="metric-label">Current dataset</span>
+          <strong>4 mixes</strong>
+          <small>Mix designs, cube test results, factors and source log</small>
+        </div>
+      </aside>
+    </section>
+
+    <section class="intro-section section-pad compact">
+      <div class="content-card wide-card">
+        <h2>Embodied Carbon Model for Concrete</h2>
+        <p>This calculator is set up for temporary works decision-making. It compares carbon, cost and early-age compressive strength so a user can identify a mix that is lower carbon while still meeting practical strength requirements.</p>
+        <div class="notice-grid">
+          <div class="notice"><strong>Scope:</strong> A1–A3 only. Transport to site, batching energy, curing energy, reinforcement and end-of-life are excluded unless added later.</div>
+          <div class="notice"><strong>Method:</strong> Quantity × carbon factor for each material, summed for the selected cube volume.</div>
+          <div class="notice"><strong>Disclaimer:</strong> This is a dissertation prototype. Replace default factors with verified project EPDs before using for real project decisions.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-pad split" id="calculator">
+      <div class="section-title">
+        <p class="eyebrow">1. Concrete mixture</p>
+        <h2>Calculator controls</h2>
+        <p>Choose a mix, adjust cube assumptions, and edit factors if needed. The results update instantly.</p>
+      </div>
+
+      <div class="calculator-layout">
+        <form class="content-card form-card" id="calculatorForm">
+          <h3>User inputs</h3>
+          <label for="mixSelect">Selected mix</label>
+          <select id="mixSelect" name="mixSelect"></select>
+
+          <div class="field-grid">
+            <div>
+              <label for="cubeSize">Cube size (mm)</label>
+              <input id="cubeSize" name="cubeSize" type="number" min="10" step="1" value="100" />
+            </div>
+            <div>
+              <label for="cubeCount">Number of cubes</label>
+              <input id="cubeCount" name="cubeCount" type="number" min="1" step="1" value="3" />
+            </div>
+            <div>
+              <label for="wastage">Wastage allowance (%)</label>
+              <input id="wastage" name="wastage" type="number" min="0" step="0.5" value="10" />
+            </div>
+          </div>
+
+          <div class="calculated-box">
+            <span>Calculated wet volume</span>
+            <strong id="wetVolumeDisplay">0.0033 m³</strong>
+          </div>
+
+          <div class="button-row">
+            <button type="button" class="button primary" id="calculateBtn">Calculate</button>
+            <button type="button" class="button secondary" id="printBtn">Download / print report</button>
+            <button type="button" class="button ghost" id="resetBtn">Reset</button>
+          </div>
+        </form>
+
+        <div class="content-card selected-card" id="selectedSummaryCard">
+          <h3>Selected mix summary</h3>
+          <div class="summary-grid">
+            <div><span>Mix</span><strong id="selectedMixLabel">Mix 1</strong></div>
+            <div><span>Description</span><strong id="selectedDescription">Low cement – low carbon</strong></div>
+            <div><span>A1–A3 carbon</span><strong id="selectedCarbon">0.00 kgCO₂e</strong></div>
+            <div><span>Indicative cost</span><strong id="selectedCost">£0.00</strong></div>
+            <div><span>Average strength</span><strong id="selectedStrength">0.00 MPa</strong></div>
+            <div><span>Carbon / MPa</span><strong id="selectedCarbonPerMpa">0.000 kgCO₂e/MPa</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-pad" id="results">
+      <div class="section-title">
+        <p class="eyebrow">2. Results</p>
+        <h2>Material quantities, carbon and cost for selected mix</h2>
+        <p>The table below mirrors the Excel calculator output for the selected mix.</p>
+      </div>
+      <div class="content-card table-card">
+        <div class="table-toolbar">
+          <h3>Material calculation</h3>
+          <span id="resultTableCaption">Based on selected mix and current cube volume</span>
+        </div>
+        <div class="table-wrap">
+          <table id="materialResultsTable">
+            <thead>
+              <tr>
+                <th>Material</th>
+                <th>Per m³ quantity</th>
+                <th>Unit</th>
+                <th>Required quantity</th>
+                <th>Carbon factor</th>
+                <th>Carbon (kgCO₂e)</th>
+                <th>Cost factor</th>
+                <th>Cost (£)</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3">TOTAL</td>
+                <td id="totalQuantityCell">0</td>
+                <td></td>
+                <td id="totalCarbonCell">0</td>
+                <td></td>
+                <td id="totalCostCell">0</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-pad dashboard-section" id="dashboard">
+      <div class="section-title">
+        <p class="eyebrow">3. Dashboard</p>
+        <h2>Carbon breakdown and mix comparison</h2>
+        <p>Use the search and sorting controls to interrogate the mix database.</p>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="content-card chart-card">
+          <div class="chart-head">
+            <h3>Carbon breakdown for selected mix</h3>
+            <span id="donutTotalLabel">0.00 kgCO₂e total</span>
+          </div>
+          <div class="donut-row">
+            <div class="donut" id="carbonDonut" aria-label="Carbon breakdown donut chart"></div>
+            <div class="legend" id="donutLegend"></div>
+          </div>
+        </div>
+
+        <div class="content-card chart-card">
+          <div class="chart-head">
+            <h3>All mixes: carbon comparison</h3>
+            <span>kgCO₂e for selected cube volume</span>
+          </div>
+          <div class="bar-chart" id="carbonBarChart"></div>
+        </div>
+
+        <div class="content-card chart-card">
+          <div class="chart-head">
+            <h3>Cost and strength comparison</h3>
+            <span>Indicative cost and cube test average</span>
+          </div>
+          <div class="dual-chart-grid">
+            <div>
+              <h4>Cost (£)</h4>
+              <div class="bar-chart small" id="costBarChart"></div>
+            </div>
+            <div>
+              <h4>Strength (MPa)</h4>
+              <div class="bar-chart small" id="strengthBarChart"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="content-card chart-card highlight-card">
+          <h3>Best mix indicators</h3>
+          <div class="best-grid">
+            <div><span>Lowest carbon</span><strong id="bestCarbonMix">-</strong></div>
+            <div><span>Lowest cost</span><strong id="bestCostMix">-</strong></div>
+            <div><span>Highest strength</span><strong id="bestStrengthMix">-</strong></div>
+            <div><span>Lowest carbon / MPa</span><strong id="bestEfficiencyMix">-</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-pad" id="data">
+      <div class="section-title">
+        <p class="eyebrow">4. Data tables</p>
+        <h2>Mix library, cube test summary and editable factors</h2>
+      </div>
+
+      <div class="content-card controls-card">
+        <div class="filter-grid">
+          <div>
+            <label for="mixSearch">Search mixes</label>
+            <input type="search" id="mixSearch" placeholder="Search by description or material..." />
+          </div>
+          <div>
+            <label for="sortSelect">Sort comparison table</label>
+            <select id="sortSelect">
+              <option value="id">Mix number</option>
+              <option value="carbon">Lowest carbon</option>
+              <option value="cost">Lowest cost</option>
+              <option value="strength-desc">Highest strength</option>
+              <option value="carbonPerMpa">Lowest carbon / MPa</option>
+            </select>
+          </div>
+          <div class="export-buttons">
+            <button type="button" class="button secondary" id="exportCsvBtn">Export comparison CSV</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="content-card table-card">
+        <div class="table-toolbar">
+          <h3>Comparison of all mixes using current controls</h3>
+          <span>Click a mix row to load it into the calculator</span>
+        </div>
+        <div class="table-wrap">
+          <table id="comparisonTable">
+            <thead>
+              <tr>
+                <th>Mix</th>
+                <th>Description</th>
+                <th>Carbon (kgCO₂e)</th>
+                <th>Cost (£)</th>
+                <th>Avg strength (MPa)</th>
+                <th>Tests used</th>
+                <th>Carbon / MPa</th>
+                <th>Cement qty</th>
+                <th>GGBS qty</th>
+                <th>Sand qty</th>
+                <th>Agg qty</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="two-col-data">
+        <div class="content-card table-card">
+          <h3>Cube test summary</h3>
+          <div class="table-wrap">
+            <table id="cubeSummaryTable">
+              <thead><tr><th>Mix</th><th>Tests used</th><th>Missing</th><th>Average MPa</th><th>Min</th><th>Max</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="content-card table-card">
+          <h3>Carbon and cost factors</h3>
+          <p class="microcopy">Edit factor values below to test sensitivity. Source URLs are listed in the guidance section.</p>
+          <div class="table-wrap">
+            <table id="factorsTable">
+              <thead><tr><th>Material</th><th>Carbon factor</th><th>Cost factor</th><th>Unit</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-pad" id="guidance">
+      <div class="section-title">
+        <p class="eyebrow">5. User guidance</p>
+        <h2>How to use this prototype</h2>
+      </div>
+      <div class="guidance-grid">
+        <div class="content-card">
+          <h3>Steps</h3>
+          <ol>
+            <li>Select a concrete mix from the dropdown.</li>
+            <li>Confirm cube size, number of cubes and wastage allowance.</li>
+            <li>Review the material quantities, carbon total, cost and strength summary.</li>
+            <li>Compare all mixes using the dashboard and comparison table.</li>
+            <li>Replace default factors with verified EPD values for final dissertation calculations.</li>
+          </ol>
+        </div>
+        <div class="content-card">
+          <h3>Formula used</h3>
+          <p><strong>Wet volume:</strong> (cube size ÷ 1000)³ × number of cubes × (1 + wastage %)</p>
+          <p><strong>Material quantity:</strong> material quantity per m³ × wet volume</p>
+          <p><strong>Embodied carbon:</strong> material quantity × A1–A3 carbon factor</p>
+          <p><strong>Cost:</strong> material quantity × material cost factor</p>
+        </div>
+        <div class="content-card wide-card">
+          <h3>Source log from workbook</h3>
+          <div class="table-wrap">
+            <table id="sourceTable">
+              <thead><tr><th>Category</th><th>Input used</th><th>Value used</th><th>Source</th><th>Why used</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>EcoConcrete Tool — dissertation website prototype based on the uploaded Excel calculator. Not affiliated with Circular Ecology.</p>
+  </footer>
+
+  <script>
+const defaultData = {
+  mixes: [
+    { id: 1, description: "Low cement – low carbon", cement: 240, ggbs: 0, water: 168, sand: 778, aggregate: 1166, wb: 0.70, notes: "Imported from Proposed mixes.xlsx" },
+    { id: 2, description: "Baseline C20/25 (all CEM I)", cement: 320, ggbs: 0, water: 192, sand: 737, aggregate: 1103, wb: 0.60, notes: "Imported from Proposed mixes.xlsx" },
+    { id: 3, description: "High cement – high strength", cement: 395, ggbs: 0, water: 217, sand: 696, aggregate: 1044, wb: 0.55, notes: "Imported from Proposed mixes.xlsx" },
+    { id: 4, description: "ECO mix – 50% GGBS", cement: 160, ggbs: 160, water: 192, sand: 737, aggregate: 1103, wb: 0.60, notes: "Imported from Proposed mixes.xlsx" }
+  ],
+  cubeSummary: [
+    { mix: 1, tested: 2, missing: 1, avg: 25.53, min: 25.08, max: 25.98 },
+    { mix: 2, tested: 2, missing: 1, avg: 30.54, min: 29.78, max: 31.29 },
+    { mix: 3, tested: 3, missing: 0, avg: 33.51, min: 33.00, max: 33.82 },
+    { mix: 4, tested: 3, missing: 0, avg: 15.15, min: 15.13, max: 15.17 }
+  ],
+  factors: {
+    cement: { label: "Cement", unit: "kg", carbon: 0.693, carbonUnit: "kgCO₂e/kg", cost: 0.27, costUnit: "£/kg" },
+    ggbs: { label: "GGBS", unit: "kg", carbon: 0.155, carbonUnit: "kgCO₂e/kg", cost: 0.518, costUnit: "£/kg" },
+    water: { label: "Water", unit: "L", carbon: 0.0001913, carbonUnit: "kgCO₂e/L", cost: 0, costUnit: "£/L" },
+    sand: { label: "Sand", unit: "kg", carbon: 0.00438, carbonUnit: "kgCO₂e/kg", cost: 0.0847058824, costUnit: "£/kg" },
+    aggregate: { label: "20 mm Aggregate", unit: "kg", carbon: 0.00438, carbonUnit: "kgCO₂e/kg", cost: 0.0847058824, costUnit: "£/kg" }
+  },
+  sources: [
+    { category: "Brief", input: "3 cubes output / quantity / carbon / costing / carbon factors / EPDs", value: "From uploaded brief", source: "uploaded files", why: "Used to shape workbook outputs" },
+    { category: "Carbon factor", input: "Cement", value: "0.693 kgCO₂e/kg", source: "https://www.heidelbergmaterials.co.uk/sites/default/files/2024-08/environmental-product-declaration-bulk-cem-i.htm_.pdf", why: "Recent official UK EPD-based default" },
+    { category: "Carbon factor", input: "GGBS", value: "0.155 kgCO₂e/kg", source: "https://www.heidelbergmaterials.co.uk/system/files/2025-04/environmental-product-declaration-ggbs.pdf", why: "Recent official UK EPD-based default" },
+    { category: "Carbon factor", input: "Sand / aggregate proxy", value: "0.00438 kgCO₂e/kg", source: "https://www.holcim.co.uk/sites/uk/files/docs/epd-torr-quarry-2025-bregenepd000676.pdf", why: "Recent official aggregate EPD that covers coarse, fine and washed aggregates" },
+    { category: "Carbon factor", input: "Water supply", value: "0.1913 kgCO₂e/m³", source: "https://assets.publishing.service.gov.uk/media/6846a4f55e92539572806125/ghg-conversion-factors-2025-full-set.xlsx", why: "Official UK government conversion factor" },
+    { category: "Cost factor", input: "Cement", value: "£6.75 per 25kg bag", source: "https://www.wickes.co.uk/Blue-Circle-General-Purpose-Cement---25kg/p/224661", why: "Indicative prototype price" },
+    { category: "Cost factor", input: "GGBS", value: "£12.95 per 25kg bag", source: "https://www.limestuff.co.uk/additives/ggbs", why: "Indicative prototype price" },
+    { category: "Cost factor", input: "Building sand", value: "£72 per 850kg bulk bag", source: "https://www.travisperkins.co.uk/bagged-aggregates/travis-perkins-building-sand-bulk-bag/p/938155", why: "Indicative prototype price" },
+    { category: "Cost factor", input: "20mm aggregate", value: "£72 per 850kg bulk bag", source: "https://www.travisperkins.co.uk/bagged-aggregates/travis-perkins-gravel-and-shingle-bulk-bag-20mm/p/938191", why: "Indicative prototype price" }
+  ]
+};
+
+let state = {
+  selectedMixId: 1,
+  cubeSize: 100,
+  cubeCount: 3,
+  wastage: 10,
+  factors: structuredClone(defaultData.factors),
+  sort: "id",
+  search: ""
+};
+
+const colours = ["#1e6b4f", "#b7d267", "#66a982", "#e0b75e", "#8fb7a1", "#c9825a"];
+const materialKeys = ["cement", "ggbs", "water", "sand", "aggregate"];
+const materialQuantityKeys = { cement: "cement", ggbs: "ggbs", water: "water", sand: "sand", aggregate: "aggregate" };
+
+const fmt = {
+  carbon: value => `${value.toFixed(3)} kgCO₂e`,
+  cost: value => `£${value.toFixed(2)}`,
+  number: (value, places = 3) => Number(value).toFixed(places),
+  percent: value => `${(value * 100).toFixed(1)}%`,
+  qty: (value, unit) => `${Number(value).toFixed(unit === "L" ? 3 : 3)} ${unit}`
+};
+
+function wetVolume() {
+  return Math.pow(state.cubeSize / 1000, 3) * state.cubeCount * (1 + state.wastage / 100);
+}
+
+function getStrengthSummary(mixId) {
+  return defaultData.cubeSummary.find(item => item.mix === Number(mixId));
+}
+
+function getMix(mixId) {
+  return defaultData.mixes.find(mix => mix.id === Number(mixId));
+}
+
+function calculateMix(mix) {
+  const volume = wetVolume();
+  const rows = materialKeys.map((key) => {
+    const factor = state.factors[key];
+    const perM3 = mix[materialQuantityKeys[key]];
+    const required = perM3 * volume;
+    const carbon = required * factor.carbon;
+    const cost = required * factor.cost;
+    return { key, material: factor.label, perM3, unit: factor.unit, required, carbonFactor: factor.carbon, costFactor: factor.cost, carbon, cost };
+  });
+  const totalCarbon = rows.reduce((sum, row) => sum + row.carbon, 0);
+  const totalCost = rows.reduce((sum, row) => sum + row.cost, 0);
+  const totalQuantity = rows.reduce((sum, row) => sum + row.required, 0);
+  const binder = rows.find(row => row.key === "cement").required + rows.find(row => row.key === "ggbs").required;
+  const water = rows.find(row => row.key === "water").required;
+  const strength = getStrengthSummary(mix.id);
+  const carbonPerMpa = strength && strength.avg ? totalCarbon / strength.avg : 0;
+  return { mix, volume, rows, totalCarbon, totalCost, totalQuantity, binder, water, wb: binder > 0 ? water / binder : 0, strength, carbonPerMpa };
+}
+
+function allCalculatedMixes() {
+  return defaultData.mixes.map(calculateMix);
+}
+
+function updateInputsFromDom() {
+  state.selectedMixId = Number(document.getElementById("mixSelect").value);
+  state.cubeSize = Number(document.getElementById("cubeSize").value) || 100;
+  state.cubeCount = Number(document.getElementById("cubeCount").value) || 3;
+  state.wastage = Number(document.getElementById("wastage").value) || 0;
+  state.sort = document.getElementById("sortSelect")?.value || "id";
+  state.search = (document.getElementById("mixSearch")?.value || "").toLowerCase().trim();
+}
+
+function renderMixSelect() {
+  const mixSelect = document.getElementById("mixSelect");
+  mixSelect.innerHTML = defaultData.mixes.map(mix => `<option value="${mix.id}">Mix ${mix.id} — ${mix.description}</option>`).join("");
+  mixSelect.value = String(state.selectedMixId);
+}
+
+function renderSelectedSummary(calc) {
+  document.getElementById("wetVolumeDisplay").textContent = `${calc.volume.toFixed(6)} m³`;
+  document.getElementById("selectedMixLabel").textContent = `Mix ${calc.mix.id}`;
+  document.getElementById("selectedDescription").textContent = calc.mix.description;
+  document.getElementById("selectedCarbon").textContent = fmt.carbon(calc.totalCarbon);
+  document.getElementById("selectedCost").textContent = fmt.cost(calc.totalCost);
+  document.getElementById("selectedStrength").textContent = `${calc.strength.avg.toFixed(2)} MPa`;
+  document.getElementById("selectedCarbonPerMpa").textContent = `${calc.carbonPerMpa.toFixed(4)} kgCO₂e/MPa`;
+  document.getElementById("donutTotalLabel").textContent = `${calc.totalCarbon.toFixed(3)} kgCO₂e total`;
+}
+
+function renderMaterialTable(calc) {
+  const tbody = document.querySelector("#materialResultsTable tbody");
+  tbody.innerHTML = calc.rows.map(row => `
+    <tr>
+      <td>${row.material}</td>
+      <td>${row.perM3.toFixed(3)}</td>
+      <td>${row.unit}</td>
+      <td>${fmt.qty(row.required, row.unit)}</td>
+      <td>${row.carbonFactor.toFixed(row.carbonFactor < 0.01 ? 6 : 3)}</td>
+      <td>${row.carbon.toFixed(4)}</td>
+      <td>${row.costFactor.toFixed(row.costFactor < 0.01 ? 4 : 3)}</td>
+      <td>${row.cost.toFixed(2)}</td>
+    </tr>
+  `).join("");
+  document.getElementById("totalQuantityCell").textContent = `${calc.totalQuantity.toFixed(3)} mixed units`;
+  document.getElementById("totalCarbonCell").textContent = calc.totalCarbon.toFixed(4);
+  document.getElementById("totalCostCell").textContent = calc.totalCost.toFixed(2);
+}
+
+function renderDonut(calc) {
+  const donut = document.getElementById("carbonDonut");
+  const legend = document.getElementById("donutLegend");
+  let start = 0;
+  const segments = calc.rows.map((row, index) => {
+    const share = calc.totalCarbon > 0 ? row.carbon / calc.totalCarbon : 0;
+    const end = start + share * 360;
+    const segment = `${colours[index]} ${start.toFixed(1)}deg ${end.toFixed(1)}deg`;
+    start = end;
+    return { ...row, share, segment, colour: colours[index] };
+  });
+  donut.style.background = `conic-gradient(${segments.map(s => s.segment).join(", ")})`;
+  donut.dataset.label = `${calc.totalCarbon.toFixed(3)}\nkgCO₂e`;
+  legend.innerHTML = segments.map(seg => `
+    <div class="legend-item">
+      <span class="legend-swatch" style="background:${seg.colour}"></span>
+      <span>${seg.material}</span>
+      <strong>${fmt.percent(seg.share)}</strong>
+    </div>
+  `).join("");
+}
+
+function renderBarChart(elementId, data, valueKey, suffix, places = 3) {
+  const container = document.getElementById(elementId);
+  const maxValue = Math.max(...data.map(item => item[valueKey]), 0.000001);
+  container.innerHTML = data.map(item => {
+    const pct = Math.max(2, (item[valueKey] / maxValue) * 100);
+    const selectedClass = item.mix.id === state.selectedMixId ? " selected-bar" : "";
+    return `
+      <div class="bar-row${selectedClass}">
+        <div class="bar-label">Mix ${item.mix.id}</div>
+        <div class="bar-track" title="${item.mix.description}"><div class="bar-fill" style="width:${pct}%"></div></div>
+        <div class="bar-value">${item[valueKey].toFixed(places)}${suffix}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+function filterAndSortData(data) {
+  let filtered = data.filter(item => {
+    if (!state.search) return true;
+    const searchable = `${item.mix.id} ${item.mix.description} cement ggbs sand aggregate water`.toLowerCase();
+    return searchable.includes(state.search);
+  });
+  const sorters = {
+    id: (a, b) => a.mix.id - b.mix.id,
+    carbon: (a, b) => a.totalCarbon - b.totalCarbon,
+    cost: (a, b) => a.totalCost - b.totalCost,
+    "strength-desc": (a, b) => b.strength.avg - a.strength.avg,
+    carbonPerMpa: (a, b) => a.carbonPerMpa - b.carbonPerMpa
+  };
+  return filtered.sort(sorters[state.sort] || sorters.id);
+}
+
+function renderComparisonTable(data) {
+  const tbody = document.querySelector("#comparisonTable tbody");
+  const filtered = filterAndSortData(data);
+  tbody.innerHTML = filtered.map(item => {
+    const cement = item.rows.find(row => row.key === "cement").required;
+    const ggbs = item.rows.find(row => row.key === "ggbs").required;
+    const sand = item.rows.find(row => row.key === "sand").required;
+    const agg = item.rows.find(row => row.key === "aggregate").required;
+    return `
+      <tr data-mix-id="${item.mix.id}" class="${item.mix.id === state.selectedMixId ? "selected-row" : ""}">
+        <td>Mix ${item.mix.id}</td>
+        <td>${item.mix.description}</td>
+        <td>${item.totalCarbon.toFixed(4)}</td>
+        <td>${item.totalCost.toFixed(2)}</td>
+        <td>${item.strength.avg.toFixed(2)}</td>
+        <td>${item.strength.tested}/3</td>
+        <td>${item.carbonPerMpa.toFixed(4)}</td>
+        <td>${cement.toFixed(3)} kg</td>
+        <td>${ggbs.toFixed(3)} kg</td>
+        <td>${sand.toFixed(3)} kg</td>
+        <td>${agg.toFixed(3)} kg</td>
+      </tr>
+    `;
+  }).join("");
+  tbody.querySelectorAll("tr").forEach(row => {
+    row.addEventListener("click", () => {
+      state.selectedMixId = Number(row.dataset.mixId);
+      document.getElementById("mixSelect").value = state.selectedMixId;
+      renderAll();
+      document.getElementById("calculator").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+}
+
+function renderCubeSummary() {
+  const tbody = document.querySelector("#cubeSummaryTable tbody");
+  tbody.innerHTML = defaultData.cubeSummary.map(row => `
+    <tr>
+      <td>Mix ${row.mix}</td>
+      <td>${row.tested}/3</td>
+      <td>${row.missing}</td>
+      <td>${row.avg.toFixed(2)}</td>
+      <td>${row.min.toFixed(2)}</td>
+      <td>${row.max.toFixed(2)}</td>
+    </tr>
+  `).join("");
+}
+
+function renderFactorsTable() {
+  const tbody = document.querySelector("#factorsTable tbody");
+  tbody.innerHTML = materialKeys.map(key => {
+    const factor = state.factors[key];
+    return `
+      <tr>
+        <td>${factor.label}</td>
+        <td><input aria-label="${factor.label} carbon factor" data-factor-key="${key}" data-factor-type="carbon" type="number" step="0.000001" value="${factor.carbon}"></td>
+        <td><input aria-label="${factor.label} cost factor" data-factor-key="${key}" data-factor-type="cost" type="number" step="0.001" value="${factor.cost}"></td>
+        <td>${factor.carbonUnit}<br><small>${factor.costUnit}</small></td>
+      </tr>
+    `;
+  }).join("");
+  tbody.querySelectorAll("input").forEach(input => {
+    input.addEventListener("input", () => {
+      const key = input.dataset.factorKey;
+      const type = input.dataset.factorType;
+      state.factors[key][type] = Number(input.value) || 0;
+      renderAll(false);
+    });
+  });
+}
+
+function renderSourceTable() {
+  const tbody = document.querySelector("#sourceTable tbody");
+  tbody.innerHTML = defaultData.sources.map(row => {
+    const source = row.source.startsWith("http") ? `<a href="${row.source}" target="_blank" rel="noopener">Open source</a>` : row.source;
+    return `<tr><td>${row.category}</td><td>${row.input}</td><td>${row.value}</td><td>${source}</td><td>${row.why}</td></tr>`;
+  }).join("");
+}
+
+function renderBestIndicators(data) {
+  const lowestCarbon = [...data].sort((a,b) => a.totalCarbon - b.totalCarbon)[0];
+  const lowestCost = [...data].sort((a,b) => a.totalCost - b.totalCost)[0];
+  const highestStrength = [...data].sort((a,b) => b.strength.avg - a.strength.avg)[0];
+  const lowestEfficiency = [...data].sort((a,b) => a.carbonPerMpa - b.carbonPerMpa)[0];
+  document.getElementById("bestCarbonMix").textContent = `Mix ${lowestCarbon.mix.id} (${lowestCarbon.totalCarbon.toFixed(3)} kgCO₂e)`;
+  document.getElementById("bestCostMix").textContent = `Mix ${lowestCost.mix.id} (${fmt.cost(lowestCost.totalCost)})`;
+  document.getElementById("bestStrengthMix").textContent = `Mix ${highestStrength.mix.id} (${highestStrength.strength.avg.toFixed(2)} MPa)`;
+  document.getElementById("bestEfficiencyMix").textContent = `Mix ${lowestEfficiency.mix.id} (${lowestEfficiency.carbonPerMpa.toFixed(4)})`;
+}
+
+function exportComparisonCsv() {
+  const data = filterAndSortData(allCalculatedMixes());
+  const headers = ["Mix", "Description", "Carbon kgCO2e", "Cost GBP", "Avg strength MPa", "Tests used", "Carbon per MPa"];
+  const rows = data.map(item => [
+    `Mix ${item.mix.id}`,
+    item.mix.description,
+    item.totalCarbon.toFixed(6),
+    item.totalCost.toFixed(4),
+    item.strength.avg.toFixed(2),
+    `${item.strength.tested}/3`,
+    item.carbonPerMpa.toFixed(6)
+  ]);
+  const csv = [headers, ...rows].map(row => row.map(cell => `"${String(cell).replaceAll('"', '""')}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "concrete-carbon-comparison.csv";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function renderAll(readFromDom = true) {
+  if (readFromDom) updateInputsFromDom();
+  const selectedMix = getMix(state.selectedMixId);
+  const selectedCalc = calculateMix(selectedMix);
+  const data = allCalculatedMixes();
+  renderSelectedSummary(selectedCalc);
+  renderMaterialTable(selectedCalc);
+  renderDonut(selectedCalc);
+  renderBarChart("carbonBarChart", data, "totalCarbon", "", 3);
+  renderBarChart("costBarChart", data, "totalCost", "", 2);
+  const strengthData = data.map(item => ({ ...item, strengthValue: item.strength.avg }));
+  renderBarChart("strengthBarChart", strengthData, "strengthValue", "", 2);
+  renderComparisonTable(data);
+  renderBestIndicators(data);
+}
+
+function initialise() {
+  renderMixSelect();
+  renderCubeSummary();
+  renderFactorsTable();
+  renderSourceTable();
+  renderAll(false);
+
+  ["mixSelect", "cubeSize", "cubeCount", "wastage", "sortSelect", "mixSearch"].forEach(id => {
+    const element = document.getElementById(id);
+    if (element) element.addEventListener("input", () => renderAll(true));
+  });
+  document.getElementById("calculateBtn").addEventListener("click", () => renderAll(true));
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    state = { selectedMixId: 1, cubeSize: 100, cubeCount: 3, wastage: 10, factors: structuredClone(defaultData.factors), sort: "id", search: "" };
+    document.getElementById("mixSelect").value = "1";
+    document.getElementById("cubeSize").value = "100";
+    document.getElementById("cubeCount").value = "3";
+    document.getElementById("wastage").value = "10";
+    document.getElementById("sortSelect").value = "id";
+    document.getElementById("mixSearch").value = "";
+    renderFactorsTable();
+    renderAll(false);
+  });
+  document.getElementById("printBtn").addEventListener("click", () => window.print());
+  document.getElementById("exportCsvBtn").addEventListener("click", exportComparisonCsv);
+
+  const menuButton = document.querySelector(".menu-button");
+  const navLinks = document.getElementById("navLinks");
+  menuButton.addEventListener("click", () => {
+    const open = navLinks.classList.toggle("open");
+    menuButton.setAttribute("aria-expanded", String(open));
+  });
+  navLinks.querySelectorAll("a").forEach(link => link.addEventListener("click", () => {
+    navLinks.classList.remove("open");
+    menuButton.setAttribute("aria-expanded", "false");
+  }));
+}
+
+document.addEventListener("DOMContentLoaded", initialise);
+
+</script>
+</body>
+</html>
